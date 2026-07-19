@@ -1,5 +1,10 @@
 name: GitHub Pages
 
+# Veröffentlicht die App, indem der aktuelle Stand auf den gh-pages-Branch
+# gespiegelt wird. GitHub Pages liefert den Branch dann automatisch aus.
+# (Das direkte Anlegen der Pages-Site per actions/configure-pages scheitert,
+# weil der Workflow-Token keine Admin-Rechte auf das Repository hat.)
+
 on:
   push:
     branches:
@@ -8,9 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -19,16 +22,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Auf gh-pages spiegeln
+        run: git push -f origin HEAD:gh-pages

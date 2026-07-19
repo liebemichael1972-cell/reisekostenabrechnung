@@ -1,0 +1,28 @@
+name: GitHub Pages
+
+# Veröffentlicht die App, indem der aktuelle Stand auf den gh-pages-Branch
+# gespiegelt wird. GitHub Pages liefert den Branch dann automatisch aus.
+# (Das direkte Anlegen der Pages-Site per actions/configure-pages scheitert,
+# weil der Workflow-Token keine Admin-Rechte auf das Repository hat.)
+
+on:
+  push:
+    branches:
+      - main
+      - claude/reisekostenabrechnung-app-bjeqph
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auf gh-pages spiegeln
+        run: git push -f origin HEAD:gh-pages

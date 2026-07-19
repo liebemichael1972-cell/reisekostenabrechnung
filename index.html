@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reisekostenabrechnung</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🧾</text></svg>">
+<style>
+  :root {
+    --blue: #1a56a0;
+    --blue-dark: #134078;
+    --bg: #f2f4f8;
+    --card: #ffffff;
+    --border: #d8dee9;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --red: #b91c1c;
+    --green: #15803d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+  }
+  header {
+    background: var(--blue);
+    color: #fff;
+    padding: 16px 20px;
+  }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  section h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    color: var(--blue-dark);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--blue);
+    outline-offset: -1px;
+  }
+  button {
+    font-size: 1rem;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-secondary { background: #e5e9f0; color: var(--text); }
+  .btn-secondary:hover { background: #d8dee9; }
+  .btn-danger { background: #fee2e2; color: var(--red); }
+  .btn-small { padding: 6px 12px; font-size: 0.85rem; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .upload-box {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .upload-box:hover { border-color: var(--blue); color: var(--blue); }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .thumb {
+    position: relative;
+    width: 72px; height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb button {
+    position: absolute; top: 2px; right: 2px;
+    width: 22px; height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.amount, th.amount { text-align: right; white-space: nowrap; }
+  .pos-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+  .empty { color: var(--muted); font-style: italic; padding: 12px 0; }
+  .totals { margin-top: 12px; border-top: 2px solid var(--blue); padding-top: 10px; }
+  .totals .line { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.92rem; }
+  .totals .grand { font-weight: 700; font-size: 1.1rem; color: var(--blue-dark); }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .actions button { flex: 1; min-width: 180px; padding: 14px; }
+  .hint { font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+  .toast {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 50;
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; }
+  #km-fields { display: none; }
+  @media (max-width: 560px) {
+    .hide-mobile { display: none; }
+    main { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Reisekostenabrechnung</h1>
+  <p>Belege fotografieren, Kosten erfassen, PDF erstellen – alle Daten bleiben auf deinem Gerät.</p>
+</header>
+
+<main>
+
+  <!-- Reisedaten -->
+  <section>
+    <h2>1. Reisedaten</h2>
+    <div class="grid">
+      <div>
+        <label for="t-name">Name des Reisenden</label>
+        <input id="t-name" type="text" placeholder="Vor- und Nachname">
+      </div>
+      <div>
+        <label for="t-org">Firma / Abteilung / Kostenstelle</label>
+        <input id="t-org" type="text" placeholder="optional">
+      </div>
+      <div>
+        <label for="t-dest">Reiseziel</label>
+        <input id="t-dest" type="text" placeholder="z. B. München">
+      </div>
+      <div>
+        <label for="t-purpose">Zweck / Anlass der Reise</label>
+        <input id="t-purpose" type="text" placeholder="z. B. Kundentermin">
+      </div>
+      <div>
+        <label for="t-start">Reisebeginn</label>
+        <input id="t-start" type="date">
+      </div>
+      <div>
+        <label for="t-end">Reiseende</label>
+        <input id="t-end" type="date">
+      </div>
+    </div>
+  </section>
+
+  <!-- Position erfassen -->
+  <section>
+    <h2 id="form-title">2. Kostenposition hinzufügen</h2>
+    <div class="grid">
+      <div>
+        <label for="p-date">Datum</label>
+        <input id="p-date" type="date">
+      </div>
+      <div>
+        <label for="p-cat">Kategorie</label>
+        <select id="p-cat">
+          <option>Fahrtkosten (Bahn/Flug/ÖPNV)</option>
+          <option>Fahrtkosten (Taxi/Mietwagen)</option>
+          <option value="km">Kilometerpauschale (Privat-Pkw)</option>
+          <option>Übernachtung</option>
+          <option>Verpflegung</option>
+          <option>Verpflegungspauschale</option>
+          <option>Bewirtung</option>
+          <option>Parken / Maut</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label for="p-desc">Beschreibung</label>
+        <input id="p-desc" type="text" placeholder="z. B. Bahnticket Köln–München">
+      </div>
+      <div id="km-fields" style="grid-column: 1 / -1;">
+        <div class="row">
+          <div style="flex:1; min-width:120px;">
+            <label for="p-km">Gefahrene Kilometer</label>
+            <input id="p-km" type="number" min="0" step="1" placeholder="km">
+          </div>
+          <div style="flex:1; min-width:120px;">
+            <label for="p-rate">Satz (€/km)</label>
+            <input id="p-rate" type="number" min="0" step="0.01" value="0.30">
+          </div>
+        </div>
+      </div>
+      <div>
+        <label for="p-amount">Betrag (EUR)</label>
+        <input id="p-amount" type="number" min="0" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+
+    <div style="margin-top: 12px;">
+      <label>Beleg-Fotos</label>
+      <div class="upload-box" id="upload-box">
+        📷 Beleg fotografieren oder Bild auswählen<br>
+        <span style="font-size:0.78rem;">(mehrere Bilder möglich, werden automatisch verkleinert)</span>
+      </div>
+      <input id="p-files" type="file" accept="image/*" multiple style="display:none;">
+      <div class="thumbs" id="p-thumbs"></div>
+    </div>
+
+    <div class="row" style="margin-top: 14px;">
+      <button class="btn-primary" id="btn-add">Position hinzufügen</button>
+      <button class="btn-secondary" id="btn-cancel-edit" style="display:none;">Abbrechen</button>
+    </div>
+  </section>
+
+  <!-- Positionen -->
+  <section>
+    <h2>3. Erfasste Positionen</h2>
+    <div id="pos-empty" class="empty">Noch keine Positionen erfasst.</div>
+    <div style="overflow-x:auto;">
+      <table id="pos-table" style="display:none;">
+        <thead>
+          <tr>
+            <th>Nr.</th>
+            <th class="hide-mobile">Datum</th>
+            <th>Kategorie / Beschreibung</th>
+            <th>Beleg</th>
+            <th class="amount">Betrag</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pos-body"></tbody>
+      </table>
+    </div>
+    <div class="totals" id="totals" style="display:none;"></div>
+  </section>
+
+  <!-- Abschluss -->
+  <section>
+    <h2>4. Abschluss</h2>
+    <div class="actions">
+      <button class="btn-primary" id="btn-pdf">📄 PDF erstellen</button>
+      <button class="btn-danger" id="btn-reset">Neue Abrechnung starten</button>
+    </div>
+    <p class="hint">
+      Das PDF enthält eine Kostenaufstellung mit Unterschriftsfeldern sowie alle Beleg-Fotos
+      (ein Beleg pro Seite). Alle Daten werden nur lokal in deinem Browser gespeichert und
+      bleiben beim Schließen der Seite erhalten.
+    </p>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+
+/* ---------- Zustand ---------- */
+
+const state = {
+  trip: { name: "", org: "", dest: "", purpose: "", start: "", end: "" },
+  positions: [] // { id, date, cat, desc, amount, km, rate, images: [{dataUrl, w, h}] }
+};
+let pendingImages = [];   // Bilder im Erfassungsformular
+let editingId = null;     // id der Position, die gerade bearbeitet wird
+let nextId = 1;
+
+const $ = (id) => document.getElementById(id);
+const euro = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 3000);
+}
+
+/* ---------- Speicherung (IndexedDB, Fallback localStorage) ---------- */
+
+const DB_NAME = "reisekosten";
+const STORE = "state";
+let db = null;
+
+function openDb() {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) return resolve(null);
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function saveState() {
+  const data = { trip: state.trip, positions: state.positions, nextId };
+  if (db) {
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(data, "current");
+      return;
+    } catch (e) { /* Fallback unten */ }
+  }
+  try {
+    localStorage.setItem(DB_NAME, JSON.stringify(data));
+  } catch (e) {
+    // Speicher voll – Daten bleiben zumindest in dieser Sitzung erhalten
+  }
+}
+
+function loadState() {
+  return new Promise((resolve) => {
+    if (db) {
+      try {
+        const req = db.transaction(STORE, "readonly").objectStore(STORE).get("current");
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+        return;
+      } catch (e) { /* Fallback unten */ }
+    }
+    try {
+      const raw = localStorage.getItem(DB_NAME);
+      resolve(raw ? JSON.parse(raw) : null);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+async function clearStorage() {
+  if (db) {
+    try { db.transaction(STORE, "readwrite").objectStore(STORE).delete("current"); } catch (e) {}
+  }
+  try { localStorage.removeItem(DB_NAME); } catch (e) {}
+}
+
+/* ---------- Bildverarbeitung ---------- */
+
+const MAX_DIM = 1600;   // längste Kante nach Verkleinerung
+const JPEG_QUALITY = 0.8;
+
+function processImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width: w, height: h } = img;
+      const scale = Math.min(1, MAX_DIM / Math.max(w, h));
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve({ dataUrl: canvas.toDataURL("image/jpeg", JPEG_QUALITY), w, h });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Bild konnte nicht gelesen werden: " + file.name));
+    };
+    img.src = url;
+  });
+}
+
+/* ---------- Formular ---------- */
+
+function renderPendingThumbs() {
+  const box = $("p-thumbs");
+  box.innerHTML = "";
+  pendingImages.forEach((im, i) => {
+    const div = document.createElement("div");
+    div.className = "thumb";
+    const img = document.createElement("img");
+    img.src = im.dataUrl;
+    const del = document.createElement("button");
+    del.textContent = "×";
+    del.title = "Bild entfernen";
+    del.onclick = () => { pendingImages.splice(i, 1); renderPendingThumbs(); };
+    div.append(img, del);
+    box.appendChild(div);
+  });
+}
+
+function updateKmVisibility() {
+  const isKm = $("p-cat").value === "km";
+  $("km-fields").style.display = isKm ? "block" : "none";
+  $("p-amount").readOnly = isKm;
+  if (isKm) updateKmAmount();
+}
+
+function updateKmAmount() {
+  const km = parseFloat($("p-km").value) || 0;
+  const rate = parseFloat($("p-rate").value) || 0;
+  $("p-amount").value = (km * rate).toFixed(2);
+}
+
+function resetForm() {
+  $("p-date").value = "";
+  $("p-desc").value = "";
+  $("p-amount").value = "";
+  $("p-km").value = "";
+  $("p-rate").value = "0.30";
+  $("p-cat").selectedIndex = 0;
+  pendingImages = [];
+  editingId = null;
+  $("form-title").textContent = "2. Kostenposition hinzufügen";
+  $("btn-add").textContent = "Position hinzufügen";
+  $("btn-cancel-edit").style.display = "none";
+  renderPendingThumbs();
+  updateKmVisibility();
+}
+
+function catLabel() {
+  const sel = $("p-cat");
+  return sel.value === "km" ? "Kilometerpauschale (Privat-Pkw)" : sel.value;
+}
+
+function addOrUpdatePosition() {
+  const amount = parseFloat($("p-amount").value);
+  if (isNaN(amount) || amount <= 0) {
+    toast("Bitte einen gültigen Betrag eingeben.");
+    return;
+  }
+  const isKm = $("p-cat").value === "km";
+  const pos = {
+    id: editingId ?? nextId++,
+    date: $("p-date").value,
+    cat: catLabel(),
+    isKm,
+    km: isKm ? (parseFloat($("p-km").value) || 0) : null,
+    rate: isKm ? (parseFloat($("p-rate").value) || 0) : null,
+    desc: $("p-desc").value.trim(),
+    amount,
+    images: pendingImages
+  };
+  if (editingId !== null) {
+    const i = state.positions.findIndex(p => p.id === editingId);
+    if (i >= 0) state.positions[i] = pos;
+    toast("Position aktualisiert.");
+  } else {
+    state.positions.push(pos);
+    toast("Position hinzugefügt.");
+  }
+  resetForm();
+  renderPositions();
+  saveState();
+}
+
+function editPosition(id) {
+  const p = state.positions.find(p => p.id === id);
+  if (!p) return;
+  editingId = id;
+  $("p-date").value = p.date || "";
+  $("p-desc").value = p.desc || "";
+  $("p-amount").value = p.amount.toFixed(2);
+  const sel = $("p-cat");
+  if (p.isKm) {
+    sel.value = "km";
+    $("p-km").value = p.km || "";
+    $("p-rate").value = p.rate != null ? p.rate : "0.30";
+  } else {
+    sel.value = p.cat;
+    if (sel.value !== p.cat) sel.value = "Sonstiges";
+  }
+  pendingImages = p.images.slice();
+  $("form-title").textContent = "2. Position bearbeiten (Nr. " + (state.positions.indexOf(p) + 1) + ")";
+  $("btn-add").textContent = "Änderungen speichern";
+  $("btn-cancel-edit").style.display = "inline-block";
+  renderPendingThumbs();
+  updateKmVisibility();
+  window.scrollTo({ top: $("form-title").offsetTop - 20, behavior: "smooth" });
+}
+
+function deletePosition(id) {
+  const p = state.positions.find(p => p.id === id);
+  if (!p) return;
+  if (!confirm("Position wirklich löschen?" + (p.desc ? "\n(" + p.desc + ")" : ""))) return;
+  state.positions = state.positions.filter(x => x.id !== id);
+  if (editingId === id) resetForm();
+  renderPositions();
+  saveState();
+}
+
+/* ---------- Anzeige ---------- */
+
+function renderPositions() {
+  const body = $("pos-body");
+  body.innerHTML = "";
+  const has = state.positions.length > 0;
+  $("pos-empty").style.display = has ? "none" : "block";
+  $("pos-table").style.display = has ? "table" : "none";
+  $("totals").style.display = has ? "block" : "none";
+
+  state.positions.forEach((p, i) => {
+    const tr = document.createElement("tr");
+
+    const tdNr = document.createElement("td");
+    tdNr.textContent = i + 1;
+
+    const tdDate = document.createElement("td");
+    tdDate.className = "hide-mobile";
+    tdDate.textContent = fmtDate(p.date);
+
+    const tdDesc = document.createElement("td");
+    const cat = document.createElement("div");
+    cat.textContent = p.cat + (p.isKm && p.km ? ` (${p.km} km × ${euro.format(p.rate)})` : "");
+    cat.style.fontWeight = "600";
+    tdDesc.appendChild(cat);
+    if (p.desc) {
+      const d = document.createElement("div");
+      d.textContent = p.desc;
+      d.style.color = "var(--muted)";
+      d.style.fontSize = "0.85rem";
+      tdDesc.appendChild(d);
+    }
+
+    const tdImg = document.createElement("td");
+    if (p.images.length) {
+      const img = document.createElement("img");
+      img.className = "pos-thumb";
+      img.src = p.images[0].dataUrl;
+      img.alt = "Beleg";
+      tdImg.appendChild(img);
+      if (p.images.length > 1) {
+        const more = document.createElement("div");
+        more.textContent = "+" + (p.images.length - 1);
+        more.style.fontSize = "0.75rem";
+        more.style.color = "var(--muted)";
+        tdImg.appendChild(more);
+      }
+    } else {
+      tdImg.textContent = "–";
+      tdImg.style.color = "var(--muted)";
+    }
+
+    const tdAmt = document.createElement("td");
+    tdAmt.className = "amount";
+    tdAmt.textContent = euro.format(p.amount);
+
+    const tdBtn = document.createElement("td");
+    tdBtn.style.whiteSpace = "nowrap";
+    const bEdit = document.createElement("button");
+    bEdit.className = "btn-secondary btn-small";
+    bEdit.textContent = "✎";
+    bEdit.title = "Bearbeiten";
+    bEdit.onclick = () => editPosition(p.id);
+    const bDel = document.createElement("button");
+    bDel.className = "btn-danger btn-small";
+    bDel.textContent = "🗑";
+    bDel.title = "Löschen";
+    bDel.style.marginLeft = "6px";
+    bDel.onclick = () => deletePosition(p.id);
+    tdBtn.append(bEdit, bDel);
+
+    tr.append(tdNr, tdDate, tdDesc, tdImg, tdAmt, tdBtn);
+    body.appendChild(tr);
+  });
+
+  // Summen je Kategorie
+  const byCat = {};
+  let total = 0;
+  state.positions.forEach(p => {
+    byCat[p.cat] = (byCat[p.cat] || 0) + p.amount;
+    total += p.amount;
+  });
+  const t = $("totals");
+  t.innerHTML = "";
+  Object.entries(byCat).forEach(([cat, sum]) => {
+    const line = document.createElement("div");
+    line.className = "line";
+    line.innerHTML = `<span>${cat}</span><span>${euro.format(sum)}</span>`;
+    t.appendChild(line);
+  });
+  const grand = document.createElement("div");
+  grand.className = "line grand";
+  grand.innerHTML = `<span>Gesamtbetrag</span><span>${euro.format(total)}</span>`;
+  t.appendChild(grand);
+}
+
+/* ---------- PDF ---------- */
+
+function pdfEuro(v) {
+  // jsPDF-Standardschrift (helvetica) kennt kein schmales Leerzeichen –
+  // daher eigene Formatierung mit Punkt als Tausendertrenner.
+  const parts = v.toFixed(2).split(".");
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return intPart + "," + parts[1] + " EUR";
+}
+
+function createPdf() {
+  if (state.positions.length === 0) {
+    toast("Bitte zuerst mindestens eine Kostenposition erfassen.");
+    return;
+  }
+  readTripForm();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = 210, pageH = 297;
+  const margin = 18;
+  const contentW = pageW - 2 * margin;
+  let y = margin;
+
+  const line = (x1, y1, x2, y2) => { doc.setDrawColor(120); doc.line(x1, y1, x2, y2); };
+
+  function ensureSpace(needed) {
+    if (y + needed > pageH - margin) {
+      doc.addPage();
+      y = margin;
+    }
+  }
+
+  /* Kopf */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(26, 86, 160);
+  doc.text("Reisekostenabrechnung", margin, y + 4);
+  doc.setTextColor(0);
+  y += 12;
+
+  doc.setFontSize(10);
+  const meta = [
+    ["Name:", state.trip.name || "–"],
+    ["Firma / Kostenstelle:", state.trip.org || "–"],
+    ["Reiseziel:", state.trip.dest || "–"],
+    ["Zweck der Reise:", state.trip.purpose || "–"],
+    ["Reisezeitraum:", (fmtDate(state.trip.start) || "–") + " bis " + (fmtDate(state.trip.end) || "–")],
+    ["Abrechnung erstellt am:", fmtDate(new Date().toISOString().slice(0, 10))]
+  ];
+  meta.forEach(([k, v]) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(k, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(v), margin + 48, y);
+    y += 6;
+  });
+  y += 4;
+
+  /* Tabelle */
+  const cols = [
+    { title: "Nr.", w: 10 },
+    { title: "Datum", w: 24 },
+    { title: "Kategorie", w: 52 },
+    { title: "Beschreibung", w: 58 },
+    { title: "Betrag", w: 30, right: true }
+  ];
+
+  function tableHeader() {
+    doc.setFillColor(232, 238, 247);
+    doc.rect(margin, y - 4.5, contentW, 7, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    let x = margin + 1.5;
+    cols.forEach(c => {
+      doc.text(c.title, c.right ? x + c.w - 3 : x, y, c.right ? { align: "right" } : undefined);
+      x += c.w;
+    });
+    y += 6;
+    doc.setFont("helvetica", "normal");
+  }
+
+  tableHeader();
+  let total = 0;
+  state.positions.forEach((p, i) => {
+    const catText = p.cat + (p.isKm && p.km ? `\n(${p.km} km × ${p.rate.toFixed(2).replace(".", ",")} EUR)` : "");
+    const catLines = doc.splitTextToSize(catText, cols[2].w - 4);
+    const descText = p.desc + (p.images.length ? `\nBeleg${p.images.length > 1 ? "e" : ""}: siehe Anlage ${i + 1}` : "");
+    const descLines = doc.splitTextToSize(descText.trim() || "–", cols[3].w - 4);
+    const rowH = Math.max(catLines.length, descLines.length) * 4 + 6;
+
+    if (y + rowH > pageH - margin - 10) {
+      doc.addPage();
+      y = margin;
+      tableHeader();
+    }
+
+    let x = margin + 1.5;
+    doc.setFontSize(9);
+    doc.text(String(i + 1), x, y); x += cols[0].w;
+    doc.text(fmtDate(p.date) || "–", x, y); x += cols[1].w;
+    doc.text(catLines, x, y); x += cols[2].w;
+    doc.text(descLines, x, y); x += cols[3].w;
+    doc.text(pdfEuro(p.amount), x + cols[4].w - 3, y, { align: "right" });
+    y += rowH;
+    line(margin, y - 4, margin + contentW, y - 4);
+    total += p.amount;
+  });
+
+  /* Gesamtsumme */
+  ensureSpace(12);
+  y += 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Gesamtbetrag:", margin + 1.5, y);
+  doc.text(pdfEuro(total), margin + contentW - 3, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  y += 4;
+  doc.setLineWidth(0.6);
+  line(margin, y, margin + contentW, y);
+  doc.setLineWidth(0.2);
+
+  /* Unterschriften */
+  ensureSpace(40);
+  y += 26;
+  doc.setFontSize(9);
+  line(margin, y, margin + 70, y);
+  doc.text("Datum, Unterschrift Reisende/r", margin, y + 5);
+  line(margin + contentW - 70, y, margin + contentW, y);
+  doc.text("Datum, Unterschrift Genehmigung", margin + contentW - 70, y + 5);
+
+  /* Beleg-Seiten */
+  let attachNo = 0;
+  state.positions.forEach((p, i) => {
+    p.images.forEach((im, j) => {
+      attachNo++;
+      doc.addPage();
+      let by = margin;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(26, 86, 160);
+      doc.text(
+        `Anlage ${i + 1}${p.images.length > 1 ? ` (Bild ${j + 1}/${p.images.length})` : ""} – Beleg zu Position ${i + 1}`,
+        margin, by
+      );
+      doc.setTextColor(0);
+      by += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const info = [fmtDate(p.date), p.cat, p.desc, pdfEuro(p.amount)].filter(Boolean).join("  |  ");
+      doc.text(doc.splitTextToSize(info, contentW), margin, by);
+      by += 8;
+
+      const maxW = contentW;
+      const maxH = pageH - margin - by;
+      const scale = Math.min(maxW / im.w, maxH / im.h);
+      const w = im.w * scale;
+      const h = im.h * scale;
+      doc.addImage(im.dataUrl, "JPEG", margin + (maxW - w) / 2, by, w, h);
+    });
+  });
+
+  /* Seitenzahlen */
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Seite ${p} von ${pages}`, pageW - margin, pageH - 8, { align: "right" });
+    doc.setTextColor(0);
+  }
+
+  const namePart = (state.trip.dest || "Reise").replace(/[^\wäöüÄÖÜß-]+/g, "_");
+  const datePart = state.trip.start || new Date().toISOString().slice(0, 10);
+  doc.save(`Reisekostenabrechnung_${namePart}_${datePart}.pdf`);
+  toast("PDF wurde erstellt.");
+}
+
+/* ---------- Reisedaten-Formular ---------- */
+
+function readTripForm() {
+  state.trip = {
+    name: $("t-name").value.trim(),
+    org: $("t-org").value.trim(),
+    dest: $("t-dest").value.trim(),
+    purpose: $("t-purpose").value.trim(),
+    start: $("t-start").value,
+    end: $("t-end").value
+  };
+}
+
+function fillTripForm() {
+  $("t-name").value = state.trip.name || "";
+  $("t-org").value = state.trip.org || "";
+  $("t-dest").value = state.trip.dest || "";
+  $("t-purpose").value = state.trip.purpose || "";
+  $("t-start").value = state.trip.start || "";
+  $("t-end").value = state.trip.end || "";
+}
+
+/* ---------- Initialisierung ---------- */
+
+async function init() {
+  db = await openDb();
+  const saved = await loadState();
+  if (saved) {
+    state.trip = saved.trip || state.trip;
+    state.positions = saved.positions || [];
+    nextId = saved.nextId || (Math.max(0, ...state.positions.map(p => p.id)) + 1);
+    fillTripForm();
+    renderPositions();
+  }
+
+  $("upload-box").onclick = () => $("p-files").click();
+  $("p-files").onchange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      try {
+        pendingImages.push(await processImage(f));
+      } catch (err) {
+        toast(err.message);
+      }
+    }
+    renderPendingThumbs();
+  };
+
+  $("p-cat").onchange = updateKmVisibility;
+  $("p-km").oninput = updateKmAmount;
+  $("p-rate").oninput = updateKmAmount;
+  $("btn-add").onclick = addOrUpdatePosition;
+  $("btn-cancel-edit").onclick = resetForm;
+  $("btn-pdf").onclick = createPdf;
+
+  $("btn-reset").onclick = async () => {
+    if (!confirm("Wirklich alle Daten löschen und eine neue Abrechnung starten?")) return;
+    state.trip = { name: state.trip.name, org: state.trip.org, dest: "", purpose: "", start: "", end: "" };
+    state.positions = [];
+    nextId = 1;
+    await clearStorage();
+    fillTripForm();
+    resetForm();
+    renderPositions();
+    saveState();
+    toast("Neue Abrechnung gestartet.");
+  };
+
+  // Reisedaten bei Eingabe speichern
+  ["t-name", "t-org", "t-dest", "t-purpose", "t-start", "t-end"].forEach(id => {
+    $(id).addEventListener("change", () => { readTripForm(); saveState(); });
+  });
+}
+
+init();
+</script>
+</body>
+</html>

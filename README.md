@@ -37,3 +37,19 @@ Auf dem Smartphone: Seite öffnen, bei „Beleg fotografieren“ tippen – die 
 - Reines HTML/CSS/JavaScript, keine Build-Tools
 - [jsPDF](https://github.com/parallax/jsPDF) (lokal in `vendor/` eingebunden) für die PDF-Erzeugung
 - IndexedDB (mit localStorage-Fallback) für die lokale Datenhaltung
+
+## Weitere Anwendung: Fachliche Anforderungen erfassen
+
+Im selben Repository liegt eine eigenständige Web-App zur Erfassung fachlicher
+Anforderungen: [`anforderungen.html`](anforderungen.html)
+(Live: https://liebemichael1972-cell.github.io/reisekostenabrechnung/anforderungen.html).
+
+- Projektkopf (Name, Autor, Version, Datum, Ziel) erfassen
+- Anforderungen mit Titel, Beschreibung, Kategorie, MoSCoW-Priorität
+  (Muss/Soll/Kann/Abgrenzung), Stakeholder und Akzeptanzkriterien anlegen,
+  bearbeiten und löschen
+- Live-Vorschau des erzeugten **Markdown-Dokuments**
+- Export als `.md`-Datei zum Download oder Kopieren in die Zwischenablage
+- Automatische lokale Speicherung im Browser (localStorage) – nichts verlässt das Gerät
+
+Ebenfalls reines HTML/CSS/JavaScript, ohne Build-Tools und ohne Server.

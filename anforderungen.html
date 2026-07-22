@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anforderungen erfassen</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📋</text></svg>">
+<style>
+  :root {
+    --blue: #1a56a0;
+    --blue-dark: #134078;
+    --bg: #f2f4f8;
+    --card: #ffffff;
+    --border: #d8dee9;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --red: #b91c1c;
+    --green: #15803d;
+    --amber: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+  }
+  header {
+    background: var(--blue);
+    color: #fff;
+    padding: 16px 20px;
+  }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  section h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    color: var(--blue-dark);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(26,86,160,0.15);
+  }
+  .field { margin-bottom: 12px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+  }
+  .btn:hover { background: var(--blue-dark); }
+  .btn.secondary { background: #eef1f6; color: var(--blue-dark); }
+  .btn.secondary:hover { background: #e2e7f0; }
+  .btn.ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+  .btn.ghost:hover { background: #f1f3f7; color: var(--text); }
+  .btn.danger { background: transparent; color: var(--red); padding: 6px 10px; }
+  .btn.danger:hover { background: #fdecec; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .req {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: #fbfcfe;
+  }
+  .req-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .req-title { font-weight: 700; margin: 0; font-size: 1rem; }
+  .req-id { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  .req-desc { margin: 6px 0 8px; font-size: 0.9rem; white-space: pre-wrap; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #eef1f6;
+    color: var(--blue-dark);
+  }
+  .tag.muss { background: #fdecec; color: var(--red); }
+  .tag.soll { background: #fff5e6; color: var(--amber); }
+  .tag.kann { background: #eaf6ee; color: var(--green); }
+  .tag.abgrenzung { background: #eceff3; color: var(--muted); }
+  .ac-list { margin: 8px 0 0; padding-left: 20px; font-size: 0.85rem; color: var(--text); }
+  .ac-list li { margin-bottom: 2px; }
+  .empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 20px 0; }
+  .count { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+  pre.preview {
+    background: #1e2937;
+    color: #e6edf3;
+    padding: 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre;
+    max-height: 420px;
+  }
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+  .toast {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row-2 { grid-template-columns: 1fr; } }
+  .topnav { font-size: 0.8rem; }
+  .topnav a { color: #fff; opacity: 0.85; text-decoration: none; }
+  .topnav a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 Fachliche Anforderungen erfassen</h1>
+  <p>Anforderungen strukturiert erfassen und als Markdown-Dokument exportieren – lokal im Browser, ohne Server.</p>
+</header>
+
+<main>
+  <section>
+    <h2>Projekt</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="projName">Projekt / Vorhaben</label>
+        <input id="projName" placeholder="z. B. Kundenportal Relaunch">
+      </div>
+      <div class="field">
+        <label for="projAuthor">Autor / Verantwortlich</label>
+        <input id="projAuthor" placeholder="Name">
+      </div>
+      <div class="field">
+        <label for="projVersion">Version</label>
+        <input id="projVersion" placeholder="z. B. 0.1" value="0.1">
+      </div>
+      <div class="field">
+        <label for="projDate">Datum</label>
+        <input id="projDate" type="date">
+      </div>
+    </div>
+    <div class="field">
+      <label for="projGoal">Ziel / Kurzbeschreibung</label>
+      <textarea id="projGoal" placeholder="Worum geht es? Welches Problem soll gelöst werden?"></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="formTitle">Neue Anforderung</h2>
+    <div class="field">
+      <label for="reqTitle">Titel *</label>
+      <input id="reqTitle" placeholder="Kurze, prägnante Bezeichnung">
+    </div>
+    <div class="field">
+      <label for="reqDesc">Beschreibung</label>
+      <textarea id="reqDesc" placeholder="Als &lt;Rolle&gt; möchte ich &lt;Funktion&gt;, um &lt;Nutzen&gt; ... oder Freitext"></textarea>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label for="reqCategory">Kategorie</label>
+        <input id="reqCategory" list="catList" placeholder="z. B. Benutzerverwaltung">
+        <datalist id="catList"></datalist>
+      </div>
+      <div class="field">
+        <label for="reqPriority">Priorität (MoSCoW)</label>
+        <select id="reqPriority">
+          <option value="Muss">Muss (Must)</option>
+          <option value="Soll">Soll (Should)</option>
+          <option value="Kann">Kann (Could)</option>
+          <option value="Abgrenzung">Abgrenzung (Won't)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="reqStakeholder">Stakeholder / Quelle</label>
+        <input id="reqStakeholder" placeholder="z. B. Fachbereich Vertrieb">
+      </div>
+    </div>
+    <div class="field">
+      <label for="reqAc">Akzeptanzkriterien (eine pro Zeile)</label>
+      <textarea id="reqAc" placeholder="Nutzer kann sich mit E-Mail anmelden&#10;Fehlermeldung bei falschem Passwort"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="saveReq">Anforderung hinzufügen</button>
+      <button class="btn ghost" id="cancelEdit" style="display:none;">Abbrechen</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Erfasste Anforderungen <span class="count" id="reqCount"></span></h2>
+    <div id="reqList"></div>
+  </section>
+
+  <section>
+    <h2>Markdown-Dokument</h2>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn" id="downloadMd">⬇ Markdown herunterladen</button>
+      <button class="btn secondary" id="copyMd">Kopieren</button>
+      <button class="btn ghost" id="refreshPreview">Vorschau aktualisieren</button>
+    </div>
+    <pre class="preview" id="preview"></pre>
+    <p class="hint">Die Datei wird lokal erzeugt und heruntergeladen. Alle Daten bleiben im Browser gespeichert.</p>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn danger" id="resetAll">Alles zurücksetzen</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "anforderungen.v1";
+  var state = { project: {}, requirements: [], seq: 1 };
+  var editingId = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        state.project = parsed.project || {};
+        state.requirements = Array.isArray(parsed.requirements) ? parsed.requirements : [];
+        state.seq = parsed.seq || (state.requirements.length + 1);
+      }
+    } catch (e) { /* ignore corrupt storage */ }
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.remove("show"); }, 1800);
+  }
+
+  function reqId(n) { return "FA-" + String(n).padStart(3, "0"); }
+
+  // ----- Project fields -----
+  var projFields = {
+    projName: "name", projAuthor: "author", projVersion: "version",
+    projDate: "date", projGoal: "goal"
+  };
+  function bindProject() {
+    Object.keys(projFields).forEach(function (elId) {
+      var el = $(elId);
+      el.value = state.project[projFields[elId]] || "";
+      el.addEventListener("input", function () {
+        state.project[projFields[elId]] = el.value;
+        save();
+        renderPreview();
+      });
+    });
+    if (!state.project.date) {
+      var today = new Date().toISOString().slice(0, 10);
+      $("projDate").value = today;
+      state.project.date = today;
+    }
+  }
+
+  // ----- Form -----
+  function parseAc(text) {
+    return text.split("\n").map(function (l) { return l.trim(); })
+      .filter(function (l) { return l.length > 0; });
+  }
+
+  function clearForm() {
+    $("reqTitle").value = "";
+    $("reqDesc").value = "";
+    $("reqCategory").value = "";
+    $("reqPriority").value = "Muss";
+    $("reqStakeholder").value = "";
+    $("reqAc").value = "";
+    editingId = null;
+    $("formTitle").textContent = "Neue Anforderung";
+    $("saveReq").textContent = "Anforderung hinzufügen";
+    $("cancelEdit").style.display = "none";
+  }
+
+  function saveReq() {
+    var title = $("reqTitle").value.trim();
+    if (!title) { toast("Bitte einen Titel eingeben"); $("reqTitle").focus(); return; }
+    var data = {
+      title: title,
+      desc: $("reqDesc").value.trim(),
+      category: $("reqCategory").value.trim(),
+      priority: $("reqPriority").value,
+      stakeholder: $("reqStakeholder").value.trim(),
+      ac: parseAc($("reqAc").value)
+    };
+    if (editingId) {
+      var r = state.requirements.find(function (x) { return x.id === editingId; });
+      if (r) { Object.assign(r, data); }
+      toast("Anforderung aktualisiert");
+    } else {
+      data.id = reqId(state.seq);
+      state.seq += 1;
+      state.requirements.push(data);
+      toast("Anforderung hinzugefügt");
+    }
+    save();
+    clearForm();
+    render();
+  }
+
+  function editReq(id) {
+    var r = state.requirements.find(function (x) { return x.id === id; });
+    if (!r) return;
+    editingId = id;
+    $("reqTitle").value = r.title;
+    $("reqDesc").value = r.desc || "";
+    $("reqCategory").value = r.category || "";
+    $("reqPriority").value = r.priority || "Muss";
+    $("reqStakeholder").value = r.stakeholder || "";
+    $("reqAc").value = (r.ac || []).join("\n");
+    $("formTitle").textContent = "Anforderung bearbeiten (" + id + ")";
+    $("saveReq").textContent = "Änderungen speichern";
+    $("cancelEdit").style.display = "inline-flex";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function deleteReq(id) {
+    if (!confirm("Diese Anforderung löschen?")) return;
+    state.requirements = state.requirements.filter(function (x) { return x.id !== id; });
+    save();
+    if (editingId === id) clearForm();
+    render();
+    toast("Gelöscht");
+  }
+
+  // ----- Rendering -----
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+    });
+  }
+
+  function priClass(p) {
+    return { "Muss": "muss", "Soll": "soll", "Kann": "kann", "Abgrenzung": "abgrenzung" }[p] || "";
+  }
+
+  function render() {
+    renderList();
+    renderCategories();
+    renderPreview();
+  }
+
+  function renderCategories() {
+    var cats = {};
+    state.requirements.forEach(function (r) { if (r.category) cats[r.category] = true; });
+    var dl = $("catList");
+    dl.innerHTML = Object.keys(cats).map(function (c) {
+      return "<option value=\"" + esc(c) + "\">";
+    }).join("");
+  }
+
+  function renderList() {
+    var list = $("reqList");
+    $("reqCount").textContent = state.requirements.length
+      ? "(" + state.requirements.length + ")" : "";
+    if (!state.requirements.length) {
+      list.innerHTML = '<div class="empty">Noch keine Anforderungen erfasst.</div>';
+      return;
+    }
+    list.innerHTML = state.requirements.map(function (r) {
+      var acHtml = (r.ac && r.ac.length)
+        ? '<ul class="ac-list">' + r.ac.map(function (a) {
+            return "<li>" + esc(a) + "</li>";
+          }).join("") + "</ul>"
+        : "";
+      var tags = '<span class="tag ' + priClass(r.priority) + '">' + esc(r.priority) + "</span>";
+      if (r.category) tags += '<span class="tag">' + esc(r.category) + "</span>";
+      if (r.stakeholder) tags += '<span class="tag">' + esc(r.stakeholder) + "</span>";
+      return '<div class="req">' +
+        '<div class="req-head">' +
+          '<div>' +
+            '<span class="req-id">' + r.id + '</span>' +
+            '<p class="req-title">' + esc(r.title) + '</p>' +
+          '</div>' +
+          '<div style="white-space:nowrap;">' +
+            '<button class="btn ghost" data-edit="' + r.id + '">Bearbeiten</button>' +
+            '<button class="btn danger" data-del="' + r.id + '">Löschen</button>' +
+          '</div>' +
+        '</div>' +
+        (r.desc ? '<div class="req-desc">' + esc(r.desc) + '</div>' : '') +
+        '<div class="tags">' + tags + '</div>' +
+        acHtml +
+      '</div>';
+    }).join("");
+
+    list.querySelectorAll("[data-edit]").forEach(function (b) {
+      b.addEventListener("click", function () { editReq(b.getAttribute("data-edit")); });
+    });
+    list.querySelectorAll("[data-del]").forEach(function (b) {
+      b.addEventListener("click", function () { deleteReq(b.getAttribute("data-del")); });
+    });
+  }
+
+  // ----- Markdown generation -----
+  function buildMarkdown() {
+    var p = state.project;
+    var lines = [];
+    var title = p.name ? p.name : "Fachliche Anforderungen";
+    lines.push("# " + title);
+    lines.push("");
+    lines.push("_Fachliches Anforderungsdokument_");
+    lines.push("");
+
+    var meta = [];
+    if (p.author) meta.push(["Autor", p.author]);
+    if (p.version) meta.push(["Version", p.version]);
+    if (p.date) meta.push(["Datum", p.date]);
+    meta.push(["Anzahl Anforderungen", String(state.requirements.length)]);
+    if (meta.length) {
+      lines.push("| Feld | Wert |");
+      lines.push("| --- | --- |");
+      meta.forEach(function (m) { lines.push("| " + m[0] + " | " + m[1] + " |"); });
+      lines.push("");
+    }
+
+    if (p.goal) {
+      lines.push("## Ziel");
+      lines.push("");
+      lines.push(p.goal);
+      lines.push("");
+    }
+
+    lines.push("## Anforderungen");
+    lines.push("");
+
+    if (!state.requirements.length) {
+      lines.push("_Noch keine Anforderungen erfasst._");
+      lines.push("");
+      return lines.join("\n");
+    }
+
+    // Übersichtstabelle
+    lines.push("### Übersicht");
+    lines.push("");
+    lines.push("| ID | Titel | Priorität | Kategorie |");
+    lines.push("| --- | --- | --- | --- |");
+    state.requirements.forEach(function (r) {
+      lines.push("| " + r.id + " | " + mdCell(r.title) + " | " + r.priority +
+        " | " + mdCell(r.category || "–") + " |");
+    });
+    lines.push("");
+
+    // Gruppiert nach Kategorie
+    var groups = {};
+    var order = [];
+    state.requirements.forEach(function (r) {
+      var key = r.category && r.category.trim() ? r.category.trim() : "Ohne Kategorie";
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(r);
+    });
+
+    lines.push("### Details");
+    lines.push("");
+    order.forEach(function (cat) {
+      lines.push("#### " + cat);
+      lines.push("");
+      groups[cat].forEach(function (r) {
+        lines.push("##### " + r.id + " – " + r.title);
+        lines.push("");
+        lines.push("- **Priorität:** " + r.priority);
+        if (r.stakeholder) lines.push("- **Stakeholder/Quelle:** " + r.stakeholder);
+        lines.push("");
+        if (r.desc) { lines.push(r.desc); lines.push(""); }
+        if (r.ac && r.ac.length) {
+          lines.push("**Akzeptanzkriterien:**");
+          lines.push("");
+          r.ac.forEach(function (a) { lines.push("- [ ] " + a); });
+          lines.push("");
+        }
+      });
+    });
+
+    lines.push("---");
+    lines.push("");
+    lines.push("_Erstellt mit dem Anforderungs-Erfassungstool._");
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  function mdCell(s) {
+    return String(s || "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+  }
+
+  function renderPreview() {
+    $("preview").textContent = buildMarkdown();
+  }
+
+  function slugify(s) {
+    return String(s || "anforderungen").toLowerCase()
+      .replace(/[äöü]/g, function (c) { return { "ä": "ae", "ö": "oe", "ü": "ue" }[c]; })
+      .replace(/ß/g, "ss")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "anforderungen";
+  }
+
+  function downloadMd() {
+    var md = buildMarkdown();
+    var blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = slugify(state.project.name) + "-anforderungen.md";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast("Markdown heruntergeladen");
+  }
+
+  function copyMd() {
+    var md = buildMarkdown();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(
+        function () { toast("In die Zwischenablage kopiert"); },
+        function () { fallbackCopy(md); }
+      );
+    } else { fallbackCopy(md); }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); toast("Kopiert"); }
+    catch (e) { toast("Kopieren nicht möglich"); }
+    document.body.removeChild(ta);
+  }
+
+  function resetAll() {
+    if (!confirm("Wirklich alle Projektdaten und Anforderungen löschen?")) return;
+    state = { project: {}, requirements: [], seq: 1 };
+    localStorage.removeItem(STORAGE_KEY);
+    var today = new Date().toISOString().slice(0, 10);
+    state.project.date = today;
+    Object.keys(projFields).forEach(function (elId) {
+      $(elId).value = elId === "projDate" ? today : (elId === "projVersion" ? "0.1" : "");
+    });
+    state.project.version = "0.1";
+    clearForm();
+    save();
+    render();
+    toast("Zurückgesetzt");
+  }
+
+  // ----- Init -----
+  load();
+  bindProject();
+  $("saveReq").addEventListener("click", saveReq);
+  $("cancelEdit").addEventListener("click", clearForm);
+  $("downloadMd").addEventListener("click", downloadMd);
+  $("copyMd").addEventListener("click", copyMd);
+  $("refreshPreview").addEventListener("click", renderPreview);
+  $("resetAll").addEventListener("click", resetAll);
+  clearForm();
+  render();
+})();
+</script>
+</body>
+</html>
